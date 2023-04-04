@@ -1,9 +1,10 @@
 # Python-related files
+build/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-venv/
 
 # IDE-related files
 .vscode/
