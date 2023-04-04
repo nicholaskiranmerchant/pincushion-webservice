@@ -1,10 +1,13 @@
 # Python-related files
-build/
 venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Pip artifacts
+build/
+*.egg-info
 
 # IDE-related files
 .vscode/
