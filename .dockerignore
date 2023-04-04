@@ -1,0 +1,9 @@
+venv
+.gitignore
+README.md
+run_gunicorn.sh
+__pycache__
+.pytest_cache
+sdq/build
+sdq/test
+.DS_Store

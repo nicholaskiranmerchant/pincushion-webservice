@@ -9,5 +9,4 @@ MarkupSafe==2.1.2
 packaging==23.0
 pluggy==1.0.0
 pytest==7.2.2
-sdq @ file:///Users/kiranmerchant/Desktop/Home%20School/sdq/sdq
 Werkzeug==2.2.3
