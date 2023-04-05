@@ -1,0 +1,13 @@
+stages:
+    - deploy
+
+deploy-job:
+    stage: deploy
+    image: bitnami/kubectl
+    before_script:
+        - mkdir ~/.kube/
+        - echo $KUBE_CONFIG_AWS | base64 -d > config
+        - mv config ~/.kube/
+    script:
+        - kubectl get namespaces
+
