@@ -9,5 +9,4 @@ deploy-job:
         - echo $KUBE_CONFIG_AWS | base64 -d > config
         - mv config ~/.kube/
     script:
-        - kubectl get namespaces
-
+        cat ~/.kube/config
