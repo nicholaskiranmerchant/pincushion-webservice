@@ -7,7 +7,7 @@ deploy-job:
         name: bitnami/kubectl:latest
         entrypoint: ['']
     before_script:
-        - apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
+        - sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
         - echo $GKE_KUBECONFIG | base64 -d > kubeconfig.yaml
         - echo $GKE_GSA_KEY | base64 -d > gsa-key.json
         
