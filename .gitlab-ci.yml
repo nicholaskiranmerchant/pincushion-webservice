@@ -3,10 +3,12 @@ stages:
 
 deploy-job:
     stage: deploy
-    image: bitnami/kubectl
+    image: 
+        name: bitnami/kubectl:latest
+        entrypoint: ['']
     before_script:
         - mkdir ~/.kube/
         - echo $KUBE_CONFIG_AWS | base64 -d > config
         - mv config ~/.kube/
     script:
-        cat ~/.kube/config
+        kubectl get pods
