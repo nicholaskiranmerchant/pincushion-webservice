@@ -10,5 +10,5 @@ deploy-job:
         - echo $GKE_KUBECONFIG | base64 -d > gke_kubeconfig
         - export KUBECONFIG=gke_kubeconfig
     script:
-        - kubectl config view
         - kubectl config get-contexts
+        - kubectl get pods
