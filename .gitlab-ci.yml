@@ -1,18 +1,22 @@
 stages:
+    - test
     - deploy
 
-deploy-job:
-    stage: deploy
-    image: 
-        name: bitnami/kubectl:latest
-        entrypoint: ['']
+test-job:
+    stage: test
+    image: python
     before_script:
-        - sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
-        - echo $GKE_KUBECONFIG | base64 -d > kubeconfig.yaml
-        - echo $GKE_GSA_KEY | base64 -d > gsa-key.json
-        
-        - export KUBECONFIG=kubeconfig.yaml
-        - export GOOGLE_APPLICATION_CREDENTIALS=gsa-key.json
+        - pip install --no-cache-dir --upgrade pip
+        - pip install --no-cache-dir -r requirements.txt
     script:
-        - kubectl config get-contexts
-        - kubectl get pods
+        - pytest sdq
+
+build-job:
+    stage: deploy
+    image: docker
+    before_script:
+        - echo $DOCKER_GKE_AUTHKEY | docker login -u _json_key_base64 --password-stdin https://us-east1-docker.pkg.dev
+    script:
+        - docker build -t sdq .
+        - docker tag sdq us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:$CI_COMMIT_SHA
+        - docker push us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:$CI_COMMIT_SHA
