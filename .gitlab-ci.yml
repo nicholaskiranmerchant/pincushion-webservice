@@ -13,10 +13,15 @@ test-job:
 
 build-job:
     stage: deploy
-    image: docker:dind
+    image: docker
+    services:
+        - docker:dind
+    variables:
+        DOCKER_REMOTE: https://us-east1-docker.pkg.dev
+        CONTAINER_NAME: us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:$CI_COMMIT_SHA
     before_script:
-        - echo $DOCKER_GKE_AUTHKEY | docker login -u _json_key_base64 --password-stdin https://us-east1-docker.pkg.dev
+        - echo $DOCKER_GKE_AUTHKEY | docker login -u _json_key_base64 --password-stdin $DOCKER_REMOTE
     script:
         - docker build -t sdq .
-        - docker tag sdq us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:$CI_COMMIT_SHA
-        - docker push us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:$CI_COMMIT_SHA
+        - docker tag sdq $CONTAINER_NAME
+        - docker push $CONTAINER_NAME
