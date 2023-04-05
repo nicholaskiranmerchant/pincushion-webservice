@@ -7,8 +7,11 @@ deploy-job:
         name: bitnami/kubectl:latest
         entrypoint: ['']
     before_script:
-        - echo $GKE_KUBECONFIG | base64 -d > gke_kubeconfig
-        - export KUBECONFIG=gke_kubeconfig
+        - echo $GKE_KUBECONFIG | base64 -d > gke_kubeconfig.yaml
+        - echo $GKE_GSA_KEY | base64 -d > gsa-key.json
+        
+        - export KUBECONFIG=kubeconfig.yaml
+        - export GOOGLE_APPLICATION_CREDENTIALS=gsa-key.json
     script:
         - kubectl config get-contexts
         - kubectl get pods
