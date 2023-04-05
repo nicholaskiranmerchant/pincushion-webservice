@@ -13,7 +13,7 @@ test-job:
 
 build-job:
     stage: deploy
-    image: docker
+    image: docker:dind
     before_script:
         - echo $DOCKER_GKE_AUTHKEY | docker login -u _json_key_base64 --password-stdin https://us-east1-docker.pkg.dev
     script:
