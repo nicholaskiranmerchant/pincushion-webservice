@@ -47,5 +47,5 @@ deploy-job:
     entrypoint: ['']
   script:
     - kubectl config get-contexts
-    - kubectl config use-context path/to/agent/repository:agent-name
+    - kubectl config use-context .gitlab/agents/nicholaskiranmerchant-gke-agent:nicholaskiranmerchant-gke-agent#path/to/agent/repository:agent-name
     - kubectl get pods
