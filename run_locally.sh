@@ -2,5 +2,4 @@
 
 source venv/bin/activate &&
 pytest sdq && 
-pip install ./sdq &&
-gunicorn -w 1 'sdq.src.wsgi:app'
+flask --app sdq/src/wsgi:app --debug run
