@@ -10,4 +10,5 @@ deploy-job:
         - echo $KUBE_CONFIG_AWS | base64 -d > config
         - mv config ~/.kube/
     script:
-        kubectl config get-contexts
+        - kubectl config view
+        - kubectl config get-contexts
