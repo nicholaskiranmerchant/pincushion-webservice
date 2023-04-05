@@ -7,7 +7,6 @@ deploy-job:
         name: bitnami/kubectl:latest
         entrypoint: ['']
     before_script:
-        - mkdir ~/.kube/
         - echo $KUBE_CONFIG_AWS | base64 -d > config
         - mv config ~/.kube/
     script:
