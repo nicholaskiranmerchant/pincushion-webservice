@@ -1,148 +1,144 @@
-from flask import Flask, request, redirect
-import json
+import requests
+import os
+
+## FLASK SETUP ##
+from flask import Flask, request
 
 app = Flask(__name__)
 
+## FIRESTORE SETUP ##
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+fs_cred = credentials.Certificate('sdq/src/credentials/sdq1-382716-94d1796944e2.json')
+fs_app = firebase_admin.initialize_app(fs_cred)
+fs_db = firestore.client()
+
 ## UTILITY FUNCTIONS ##
-class methods:
-    get = 'GET'
-    post = 'POST'
 
-class resource:
-    def __init__(self, path):
-        self.path = path
+def hateoas_link(rel, path, method):
+    return {
+        'rel': rel,
+        'href': f'{request.url_root}{path}',
+        'method': method,
+    }
 
-        self.route = f'/{self.path}'
-
-    def reference(self, relation='', method=''):
-        return {
-            'rel': relation,
-            'method': method,
-            'href': f'{request.url_root}{self.path}'
-        }
-
-    def response(self, data, *links):
-        return {
-            'data': data, 
-            'links': [
-                self.reference('self', request.method),
-                resources.root.reference('root', methods.get),
-                *links
-            ]
-        }
-
-    def redirect(self):
-        return redirect(self.reference()['href'])
-
-class index:
-    def __init__(self, path : str, fallback : resource, source):
-        self.path = path
-        self.fallback = fallback
-        self.source = source
-        self.len = len(source)
-
-        self.route = f'/{path}/<int:index>'
-
-    def item_path(self, index):
-        return f'{self.path}/{index}'
-
-    def reference(self, relation : str, index):
-        return {
-            'rel': relation,
-            'method': 'GET',
-            'href': f'{request.url_root}{self.item_path(index)}'
-        }
-
-    def response(self, index):
-        # Fall back on an index-out-of-bounds
-        if index < 0 or index >= self.len:
-            return self.fallback.redirect()
-
-        links = []
-        if index != 0:
-            links.append(resource(self.item_path(index - 1)).reference('prev', methods.get))
-        
-        if index != self.len - 1:
-            links.append(resource(self.item_path(index + 1)).reference('next', methods.get))
-
-        
-        return resource(self.item_path(index)).response(
-            self.source[index],
+def hateoas_response(data, path, method, links=[], response_code=200):
+    response = {
+        'data': data, 
+        'links': [
+            hateoas_link('root', '', 'GET'),
+            hateoas_link('self', path, method),
             *links
-        )
-
-temp_posts = [
-    "This is my first post! I am so happy",
-    "This is my second post! I'm starting to feel weird",
-    "This is my third post- what's happening to me?",
-    "This is my fourth po....."
-]
-class resources:
-    root = resource('')
-    stats = resource('stats')
-    posts = index('posts', root, temp_posts)
-    about = resource('about')
-
-
-
-temp_stats = []
-## ROUTES ##
-@app.get(resources.stats.route)
-def get_stats():
-    data = {
-        'message': 'TODO: implement some stats about the server',
-        'temp_stats': temp_stats
+        ]
     }
 
-    return resources.stats.response(data)
+    return response, response_code
 
-@app.post(resources.stats.route)
-def post_stats():
-    data = {'temp_stats': temp_stats}
-    if len(json.dumps(request.json)) > 1e3:
-        data['success'] = False
-        data['message'] = f'Did not post entry, payload size exceeded'
+## IP LOGGING UTILS ##
+
+fs_collection = fs_db.collection('sdq-pincushion')
+
+def get_fs_remote_addresses():
+    documents = fs_collection.list_documents()
+    remote_addresses = [document.id for document in documents]
+
+    return remote_addresses
+
+def get_remote_address():
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        return request.environ['REMOTE_ADDR']
     else:
-        if len(temp_stats) >= 3:
-            temp_stats.pop(0)
+        return request.environ['HTTP_X_FORWARDED_FOR'] # if behind a proxy
 
-        temp_stats.append(request.json)
+def query_ip_api(remote_address):
+    #TODO: Turn this into a logger
+    print(f'Querying http://ip-api.com/json/{remote_address}')
+    response = requests.get(f'http://ip-api.com/json/{remote_address}')
+    if response.json()['status'] == 'fail':
+        raise requests.exceptions.HTTPError(
+            f'Failed to retrieve geoinformation from IP {remote_address}')
 
-        data['success'] = True
-        data['message'] = f'New statistics entry {request.json} posted'
+    return response.json()
 
-    return resources.stats.response(data)
+def log_remote_ip_as_pin():
+    remote_address = get_remote_address()
+    ip_geoinformation = query_ip_api(remote_address)
+    fs_collection.document(remote_address).set(ip_geoinformation)
 
-@app.get(resources.posts.route)
-def get_post(index):
-    return resources.posts.response(index)
+    return ip_geoinformation
 
-@app.get(resources.about.route)
-def get_about():
+def query_geoinformation(remote_address):
+    fs_collection.document(remote_address).get().to_dict()
+
+## ENDPOINTS ##
+
+PATH_ROOT = ''
+@app.get(f'/{PATH_ROOT}')
+def get_root():
+    data = {'message': 'Welcome to my API! Navigate to services using the below links.'}
+    links = [
+        hateoas_link('about', PATH_AUTHOR, 'GET'),
+        hateoas_link('service', PATH_PINCUSION, 'GET')
+    ]
+
+    return hateoas_response(data, PATH_ROOT, 'GET', links)
+
+PATH_AUTHOR = 'author'
+@app.get(f'/{PATH_AUTHOR}')
+def get_author():
     data = {
-        "name": "nicholas kiran merchant",
-        "occupation": "big chef dog",
-        "hometown": "ketchum, id"
+        'message': 'Author information',
+        'name': 'Nicholas (Kiran) Merchant',
+        'location': 'Brooklyn, NY',
+        'origin': 'Ketchum, ID'
     }
 
-    return resources.about.response(
-        data,
-        resources.posts.reference('posts', 0)
-    )
+    return hateoas_response(data, PATH_AUTHOR, 'GET')
 
-@app.get("/")
-def get_root_resource():
-    data = {
-        'message': 'Yo what\'s popping kings and kingesses'
-    }
+PATH_PINCUSION = 'pincushion'
+@app.get(f'/{PATH_PINCUSION}')
+def get_pincushion():
+    data = {'message': 'Add pin to log your IP information, or view logged pins below.'}
 
-    return resources.root.response(
-        data,
-        resources.stats.reference('view', methods.get),
-        resources.stats.reference('add', methods.post),
-        resources.posts.reference('view', 0),
-        resources.about.reference('about', methods.get)
-    )
+    links = [hateoas_link('log', PATH_PIN, 'GET')]
+    for remote_address in get_fs_remote_addresses():
+        links.append(hateoas_link('item', f'{PATH_PIN}/{remote_address}', 'GET') )
+
+    return hateoas_response(data, PATH_PINCUSION, 'GET', links)
+
+PATH_PIN = f'{PATH_PINCUSION}/pin'
+@app.get(f'/{PATH_PIN}')
+def log_pin():
+    links = [
+        hateoas_link('parent', PATH_PINCUSION, 'GET')
+    ]
+
+    try:
+        ip_geoinformation = log_remote_ip_as_pin()
+        data = {
+            'message': 'Logged a new pin with the following geoinformation',
+            'geoinformation': ip_geoinformation
+        }
+
+        return hateoas_response(data, PATH_PIN, 'GET', links)
+    except requests.exceptions.HTTPError as e:
+        data = {
+            'message': 'Failed to log a pin.',
+            'exception': str(e)
+        }
+
+        return hateoas_response(data, PATH_PIN, 'GET', links, response_code=500)
+
+@app.get(f'/{PATH_PIN}/<string:remote_address>')
+def get_pin(remote_address):
+    data =  query_geoinformation(remote_address)
+    links = [
+        hateoas_link('parent', PATH_PINCUSION, 'GET')
+    ]
+
+    return hateoas_response(data, f'{PATH_PIN}/{remote_address}', 'GET', links)
+
 
 if __name__ == '__main__':
     app.run(debug=False)

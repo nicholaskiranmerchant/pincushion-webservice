@@ -9,4 +9,4 @@ def test_root_resource():
     assert response.status_code == 200
     assert hateoas_compliance(response.json)
     assert 'message' in response.json['data']
-    assert response.json['data']['message'] == 'Yo what\'s popping kings and kingesses'
+    assert response.json['data']['message'] == 'Welcome to my API! Navigate to services using the below links.'

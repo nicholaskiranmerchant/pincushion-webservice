@@ -16,5 +16,7 @@
 4. Rebuild the docker container using `docker build -t sdq .`
 5. Test the docker container with `docker run -p 80:80 --name sdq sdq:latest`
 6. Push the docker container to GKE with 
-docker tag sdq us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq
-docker push us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq
+docker tag sdq us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:<new-tag-name>
+docker push us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:<new-tag-name>
+
+kubectl set image deployment/sdq-gke-deployment sdq=us-east1-docker.pkg.dev/sdq1-382716/sdq/sdq:<new-tag-name>
