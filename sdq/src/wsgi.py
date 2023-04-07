@@ -68,7 +68,13 @@ def log_remote_ip_as_pin():
     return ip_geoinformation
 
 def query_geoinformation(remote_address):
-    fs_collection.document(remote_address).get().to_dict()
+    #TODO: Turn this into a logger
+    print(f'Querying remote address: {remote_address}')
+    print(f'Available documents: {get_fs_remote_addresses()}')
+
+    doc_ref = fs_collection.document(remote_address)
+
+    return doc_ref.get().to_dict()
 
 ## ENDPOINTS ##
 
@@ -131,7 +137,10 @@ def log_pin():
 
 @app.get(f'/{PATH_PIN}/<string:remote_address>')
 def get_pin(remote_address):
-    data =  query_geoinformation(remote_address)
+    data =  {
+        'message': f'Retrieved geoinformation for the IP {remote_address}',
+        'geoinformation': query_geoinformation(remote_address)
+    }
     links = [
         hateoas_link('parent', PATH_PINCUSION, 'GET')
     ]
