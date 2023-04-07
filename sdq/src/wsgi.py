@@ -1,5 +1,4 @@
 import requests
-import os
 
 ## FLASK SETUP ##
 from flask import Flask, request
